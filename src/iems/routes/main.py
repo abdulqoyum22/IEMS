@@ -163,9 +163,41 @@ def forgot_password():
         return api_error("Enter your username to request a reset.")
     user = db.session.scalar(select(User).where(User.username == username))
     if user:
-        db.session.add(AuditLog(user_id=user.id, action="PASSWORD_RESET_REQUEST", entity_type="USER", entity_id=user.id, description=f"Password reset requested for {username}."))
-        db.session.commit()
+        try:
+            db.session.add(AuditLog(user_id=user.id, action="PASSWORD_RESET_REQUEST", entity_type="USER", entity_id=user.id, description=f"Password reset requested for {username}."))
+            db.session.commit()
+        except Exception:
+            # Fail gracefully: don't reveal errors to the client. Keep a server-side record.
+            import logging
+            logging.exception("Failed to record password reset request for %s", username)
+            try:
+                db.session.rollback()
+            except Exception:
+                pass
     return jsonify(message="If the account exists, the Administrator has been notified of the recovery request.")
+
+
+@main_blueprint.post("/api/users/<int:user_id>/reset-password")
+@admin_required
+def admin_reset_password(user_id: int):
+    """Allow an administrator to reset a user's password.
+
+    The administrator must provide a new temporary password in JSON payload as
+    `{"password": "..."}`. Passwords must meet the existing length
+    requirement (>= 8). The same hashing method is reused via `User.set_password()`.
+    """
+    payload = request.get_json() or {}
+    new_password = str(payload.get("password", ""))
+    if len(new_password) < 8:
+        return api_error("Password must be at least 8 characters.")
+    user = db.session.get(User, user_id)
+    if not user:
+        return api_error("User not found.", 404)
+    # Use existing setter to ensure same hashing is applied
+    user.set_password(new_password)
+    audit("PASSWORD_RESET_BY_ADMIN", "USER", f"Administrator reset password for {user.username}.", user.id)
+    db.session.commit()
+    return jsonify(message="Password reset successfully.")
 
 
 @main_blueprint.post("/api/auth/logout")

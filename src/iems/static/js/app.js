@@ -7,6 +7,20 @@ const money = (value) => new Intl.NumberFormat("en-NG", { style: "currency", cur
 const isoToday = () => new Date().toISOString().slice(0, 10);
 const safe = (value) => String(value ?? "").replace(/[&<>'"]/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" })[char]);
 
+function showModalCompat(dialog) {
+  if (!dialog) return;
+  if (typeof dialog.showModal === "function") return dialog.showModal();
+  dialog.classList.add("open");
+  document.body.classList.add("dialog-open");
+}
+
+function closeModalCompat(dialog) {
+  if (!dialog) return;
+  if (typeof dialog.close === "function") return dialog.close();
+  dialog.classList.remove("open");
+  document.body.classList.remove("dialog-open");
+}
+
 function applyTheme(theme) {
   document.documentElement.dataset.theme = theme;
   localStorage.setItem("iems-theme", theme);
@@ -135,7 +149,7 @@ async function openTransaction(kind, record = null) {
   try {
     const data = await api(`/api/categories?type=${kind}`);
     form.category_id.innerHTML = `<option value="">Choose category</option>${data.categories.map((item) => `<option value="${item.id}" ${Number(record?.category_id) === item.id ? "selected" : ""}>${safe(item.name)}</option>`).join("")}`;
-    $("#transaction-modal").showModal();
+    showModalCompat($("#transaction-modal"));
   } catch (error) { toast(error.message, true); }
 }
 
@@ -145,7 +159,7 @@ async function saveTransaction(event) {
   const payload = Object.fromEntries(new FormData(form)); delete payload.kind; delete payload.record_id;
   try {
     await api(`/api/transactions/${kind}${recordId ? `/${recordId}` : ""}`, { method: recordId ? "PUT" : "POST", body: JSON.stringify(payload) });
-    $("#transaction-modal").close(); toast(`${kind[0].toUpperCase() + kind.slice(1)} record saved.`);
+    closeModalCompat($("#transaction-modal")); toast(`${kind[0].toUpperCase() + kind.slice(1)} record saved.`);
     loadTransactions(kind); loadDashboard();
   } catch (error) { toast(error.message, true); }
 }
@@ -180,12 +194,12 @@ function exportReport(format) {
 }
 
 async function loadUsers() {
-  try { const data = await api("/api/users"); $("#users-table").innerHTML = data.users.map((item) => `<tr><td><b>${safe(item.full_name)}</b></td><td>${safe(item.username)}</td><td><span class="badge">${safe(item.role)}</span></td><td><span class="badge ${item.is_active ? "active" : "inactive"}">${item.is_active ? "Active" : "Inactive"}</span></td><td>${item.created_at.slice(0, 10)}</td><td>${item.id === state.user.id ? "" : `<button class="table-button" data-user-status="${item.id}" data-active="${item.is_active}">${item.is_active ? "Deactivate" : "Activate"}</button>`}</td></tr>`).join(""); } catch (error) { toast(error.message, true); }
+  try { const data = await api("/api/users"); $("#users-table").innerHTML = data.users.map((item) => `<tr><td><b>${safe(item.full_name)}</b></td><td>${safe(item.username)}</td><td><span class="badge">${safe(item.role)}</span></td><td><span class="badge ${item.is_active ? "active" : "inactive"}">${item.is_active ? "Active" : "Inactive"}</span></td><td>${item.created_at.slice(0, 10)}</td><td>${item.id === state.user.id ? "" : `<button class="table-button" data-user-status="${item.id}" data-active="${item.is_active}">${item.is_active ? "Deactivate" : "Activate"}</button><button class="table-button" data-reset-password="${item.id}">Reset password</button>`}</td></tr>`).join(""); } catch (error) { toast(error.message, true); }
 }
 
 async function saveUser(event) {
   event.preventDefault(); const form = event.currentTarget; const payload = Object.fromEntries(new FormData(form));
-  try { await api("/api/users", { method: "POST", body: JSON.stringify(payload) }); form.reset(); $("#user-modal").close(); toast("User created."); loadUsers(); } catch (error) { toast(error.message, true); }
+  try { await api("/api/users", { method: "POST", body: JSON.stringify(payload) }); form.reset(); closeModalCompat($("#user-modal")); toast("User created."); loadUsers(); } catch (error) { toast(error.message, true); }
 }
 
 async function toggleUser(id, isActive) {
@@ -201,18 +215,18 @@ $("#auth-form").addEventListener("submit", async (event) => {
   try { const data = await api(setup ? "/api/auth/setup" : "/api/auth/login", { method: "POST", body: JSON.stringify(payload) }); enterApp(data.user); } catch (error) { toast(error.message, true); }
 });
 $$('.password-toggle').forEach((button) => button.addEventListener("click", () => { const input = button.parentElement.querySelector("input"); const reveal = input.type === "password"; input.type = reveal ? "text" : "password"; button.textContent = reveal ? "Hide" : "Show"; button.setAttribute("aria-label", reveal ? "Hide password" : "Show password"); }));
-$("#forgot-password").addEventListener("click", () => $("#recovery-modal").showModal());
-$("#recovery-form").addEventListener("submit", async (event) => { event.preventDefault(); try { const payload = Object.fromEntries(new FormData(event.currentTarget)); const data = await api("/api/auth/forgot-password", { method: "POST", body: JSON.stringify(payload) }); $("#recovery-modal").close(); event.currentTarget.reset(); toast(data.message); } catch (error) { toast(error.message, true); } });
+$("#forgot-password").addEventListener("click", () => showModalCompat($("#recovery-modal")));
+$("#recovery-form").addEventListener("submit", async (event) => { event.preventDefault(); try { const payload = Object.fromEntries(new FormData(event.currentTarget)); const data = await api("/api/auth/forgot-password", { method: "POST", body: JSON.stringify(payload) }); closeModalCompat($("#recovery-modal")); event.currentTarget.reset(); toast(data.message); } catch (error) { toast(error.message, true); } });
 $$('.nav-item').forEach((button) => button.addEventListener("click", () => switchPage(button.dataset.page)));
 $$('[data-go]').forEach((button) => button.addEventListener("click", () => switchPage(button.dataset.go)));
 $("#quick-income").addEventListener("click", () => openTransaction("income"));
 $$('[data-add]').forEach((button) => button.addEventListener("click", () => openTransaction(button.dataset.add)));
 $$('[data-filter]').forEach((button) => button.addEventListener("click", () => loadTransactions(button.dataset.filter)));
-$("#transaction-form").addEventListener("submit", saveTransaction); $("#user-form").addEventListener("submit", saveUser); $("#add-user").addEventListener("click", () => $("#user-modal").showModal());
-$$('[data-close]').forEach((button) => button.addEventListener("click", () => $(`#${button.dataset.close}`).close()));
+$("#transaction-form").addEventListener("submit", saveTransaction); $("#user-form").addEventListener("submit", saveUser); $("#add-user").addEventListener("click", () => showModalCompat($("#user-modal")));
+$$('[data-close]').forEach((button) => button.addEventListener("click", () => closeModalCompat(document.getElementById(button.dataset.close))));
 $("#generate-report").addEventListener("click", generateReport); $("#export-pdf").addEventListener("click", () => exportReport("pdf")); $("#export-excel").addEventListener("click", () => exportReport("excel"));
 $$('[data-preset]').forEach((button) => button.addEventListener("click", () => setReportPreset(button.dataset.preset)));
-document.addEventListener("click", (event) => { const edit = event.target.closest("[data-edit]"), remove = event.target.closest("[data-delete]"), status = event.target.closest("[data-user-status]"); if (edit) openTransaction(edit.dataset.edit, state.transactions[edit.dataset.edit].find((item) => item.id === Number(edit.dataset.id))); if (remove) deleteTransaction(remove.dataset.delete, remove.dataset.id); if (status) toggleUser(status.dataset.userStatus, status.dataset.active === "true"); });
+document.addEventListener("click", (event) => { const edit = event.target.closest("[data-edit]"), remove = event.target.closest("[data-delete]"), status = event.target.closest("[data-user-status]"), reset = event.target.closest("[data-reset-password]"); if (edit) openTransaction(edit.dataset.edit, state.transactions[edit.dataset.edit].find((item) => item.id === Number(edit.dataset.id))); if (remove) deleteTransaction(remove.dataset.delete, remove.dataset.id); if (status) toggleUser(status.dataset.userStatus, status.dataset.active === "true"); if (reset) { const userId = reset.dataset.resetPassword; const temp = prompt('Enter a temporary password (min 8 chars) for this user:'); if (temp && temp.length >= 8) { api(`/api/users/${userId}/reset-password`, { method: 'POST', body: JSON.stringify({ password: temp }) }).then(() => { toast('Password reset. Share the temporary password securely.'); loadUsers(); }).catch((e) => toast(e.message, true)); } else if (temp) { toast('Password must be at least 8 characters.', true); } } });
 $("#logout-button").addEventListener("click", async () => { try { await api("/api/auth/logout", { method: "POST" }); location.reload(); } catch (error) { toast(error.message, true); } });
 $("#theme-toggle").addEventListener("click", () => applyTheme(document.documentElement.dataset.theme === "dark" ? "light" : "dark"));
 document.addEventListener("keydown", (event) => { if (event.ctrlKey && event.shiftKey && event.key.toLowerCase() === "d") { event.preventDefault(); $("#theme-toggle").click(); } });
