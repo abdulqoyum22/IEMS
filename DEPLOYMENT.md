@@ -37,10 +37,17 @@ This repository has been extended to support Railway deployment while preserving
 - Existing desktop entry point remains unchanged: `python run.py`
 - Browser mode remains unchanged: `python run.py --browser`
 - PyWebView and local SQLite support continue to work.
+- Use `requirements-desktop.txt` for local desktop development if you need PyWebView.
+
+### Production vs desktop dependencies
+
+- `requirements.txt` is now the production dependency file for Railway and server deployment.
+- `requirements-desktop.txt` includes the desktop-only dependency `pywebview` for local desktop/offline mode.
 
 ### Files added or updated
 
 - `requirements.txt`
+- `requirements-desktop.txt`
 - `Procfile`
 - `runtime.txt`
 - `railway.json`
