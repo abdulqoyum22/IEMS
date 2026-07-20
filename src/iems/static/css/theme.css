@@ -247,3 +247,124 @@ input:focus, select:focus, textarea:focus { border-color: #2f61ad; box-shadow: 0
 @media (prefers-reduced-motion: reduce) {
   .skeleton-text, .skeleton-row span, .app-preloader .brand-logo { animation: none; }
 }
+
+/* Authentication surface: a quiet SaaS-style grid with a restrained moving light. */
+.auth-page {
+  isolation: isolate;
+  overflow: hidden;
+  background: linear-gradient(135deg, #edf3fd 0%, #f8faff 48%, #eaf1fc 100%);
+}
+.auth-page::before,
+.auth-page::after {
+  position: absolute;
+  z-index: -1;
+  content: "";
+  pointer-events: none;
+}
+.auth-page::before {
+  inset: 0;
+  opacity: .9;
+  background-image:
+    linear-gradient(rgba(55, 94, 161, .14) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(55, 94, 161, .14) 1px, transparent 1px),
+    linear-gradient(rgba(90, 142, 225, .34), rgba(90, 142, 225, .34)),
+    linear-gradient(rgba(90, 142, 225, .27), rgba(90, 142, 225, .27)),
+    linear-gradient(rgba(90, 142, 225, .24), rgba(90, 142, 225, .24)),
+    linear-gradient(rgba(90, 142, 225, .20), rgba(90, 142, 225, .20));
+  background-size: 30px 30px, 30px 30px, 7px 7px, 6px 6px, 5px 5px, 5px 5px;
+  background-position: 0 0, 0 0, 14% 23%, 76% 20%, 25% 78%, 83% 70%;
+  background-repeat: repeat, repeat, no-repeat, no-repeat, no-repeat, no-repeat;
+  -webkit-mask-image: linear-gradient(to bottom, rgba(0,0,0,.9), transparent 88%);
+  mask-image: linear-gradient(to bottom, rgba(0,0,0,.9), transparent 88%);
+}
+.auth-page::after {
+  inset: -18%;
+  background:
+    radial-gradient(circle at 14% 20%, rgba(68, 128, 226, .24) 0%, rgba(92, 149, 239, .10) 17%, transparent 38%),
+    linear-gradient(112deg, transparent 41%, rgba(132, 181, 249, 0) 46%, rgba(132, 181, 249, .22) 50%, rgba(132, 181, 249, 0) 54%, transparent 59%);
+  background-size: 100% 100%, 165% 100%;
+  background-position: 0 0, -30% 0;
+  filter: blur(2px);
+  animation: iems-auth-grid-sweep 6s ease-in-out infinite;
+}
+.auth-brand, .auth-card, .auth-footer { z-index: 1; }
+.auth-brand { animation: iems-auth-enter .55s ease-out both; }
+.auth-card {
+  position: relative;
+  border: 1px solid rgba(255, 255, 255, .76);
+  background: rgba(255, 255, 255, .72);
+  box-shadow: 0 24px 60px rgba(25, 58, 119, .14), inset 0 1px 0 rgba(255,255,255,.72);
+  backdrop-filter: blur(16px) saturate(125%);
+  -webkit-backdrop-filter: blur(16px) saturate(125%);
+  animation: iems-auth-enter .62s .08s ease-out both;
+}
+.auth-card::before {
+  position: absolute;
+  inset: 0;
+  content: "";
+  border-radius: inherit;
+  pointer-events: none;
+  background: linear-gradient(120deg, rgba(255,255,255,.26), transparent 36%);
+}
+.auth-card > * { position: relative; }
+.auth-card .btn-primary { box-shadow: 0 8px 18px rgba(47, 97, 173, .24); }
+.auth-card .btn-primary:focus-visible,
+.auth-links button:focus-visible { outline: 3px solid rgba(47, 97, 173, .24); outline-offset: 3px; }
+.auth-footer { animation: iems-auth-enter .6s .18s ease-out both; }
+
+#signup-modal {
+  border: 1px solid rgba(255,255,255,.76);
+  background: rgba(255,255,255,.84);
+  box-shadow: 0 26px 70px rgba(12, 37, 86, .25), inset 0 1px 0 rgba(255,255,255,.74);
+  backdrop-filter: blur(18px) saturate(130%);
+  -webkit-backdrop-filter: blur(18px) saturate(130%);
+}
+#signup-modal::backdrop {
+  background-color: rgba(14, 37, 83, .48);
+  background-image:
+    linear-gradient(rgba(193, 215, 251, .11) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(193, 215, 251, .11) 1px, transparent 1px);
+  background-size: 28px 28px;
+  backdrop-filter: blur(5px);
+}
+#signup-modal[open], #signup-modal.open { animation: iems-signup-enter .24s ease-out both; }
+
+@keyframes iems-auth-grid-sweep {
+  0% { background-position: 0 0, -30% 0; opacity: .5; }
+  28% { background-position: 0 0, 70% 0; opacity: .9; }
+  48%, 100% { background-position: 0 0, 130% 0; opacity: .58; }
+}
+@keyframes iems-auth-enter {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes iems-signup-enter {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+:root[data-theme="dark"] .auth-page {
+  background: linear-gradient(135deg, #0d1c39 0%, #10264a 52%, #0b1a35 100%);
+}
+:root[data-theme="dark"] .auth-page::before {
+  background-image:
+    linear-gradient(rgba(141, 180, 247, .16) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(141, 180, 247, .16) 1px, transparent 1px),
+    linear-gradient(rgba(135, 180, 255, .42), rgba(135, 180, 255, .42)),
+    linear-gradient(rgba(135, 180, 255, .34), rgba(135, 180, 255, .34)),
+    linear-gradient(rgba(135, 180, 255, .28), rgba(135, 180, 255, .28)),
+    linear-gradient(rgba(135, 180, 255, .24), rgba(135, 180, 255, .24));
+}
+:root[data-theme="dark"] .auth-page::after { background-image: radial-gradient(circle at 14% 20%, rgba(93, 151, 245, .28), rgba(80, 130, 220, .11) 19%, transparent 40%), linear-gradient(112deg, transparent 41%, rgba(149, 190, 255, 0) 46%, rgba(149, 190, 255, .24) 50%, rgba(149, 190, 255, 0) 54%, transparent 59%); }
+:root[data-theme="dark"] .auth-card,
+:root[data-theme="dark"] #signup-modal { background: rgba(20, 42, 82, .78); border-color: rgba(119, 159, 224, .23); }
+
+@media (max-width: 650px) {
+  .auth-page::before { background-size: 24px 24px; }
+  .auth-page::after { width: 31rem; height: 31rem; top: -12rem; left: -15rem; }
+  .auth-card { border-radius: 1rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .auth-page::after, .auth-brand, .auth-card, .auth-footer, #signup-modal[open], #signup-modal.open { animation: none; }
+}
