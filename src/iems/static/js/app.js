@@ -66,7 +66,27 @@ function enterApp(user) {
   $("#sidebar-initial").textContent = user.full_name.slice(0, 1).toUpperCase();
   $$(".admin-only").forEach((item) => item.classList.toggle("hidden", user.role !== "admin"));
   $("#today-label").textContent = new Intl.DateTimeFormat("en-NG", { day: "numeric", month: "short", year: "numeric" }).format(new Date());
+  if (user.role === "admin") refreshRequestCount();
   switchPage("dashboard");
+}
+
+function setRequestCount(count) {
+  const badge = $("#requests-count");
+  if (!badge) return;
+  badge.textContent = count ? String(count) : "";
+  badge.classList.toggle("hidden", !count);
+  badge.setAttribute("aria-label", `${count} pending request${count === 1 ? "" : "s"}`);
+}
+
+async function refreshRequestCount() {
+  if (state.user?.role !== "admin") return;
+  try {
+    const [signupData, resetData] = await Promise.all([api("/api/admin/signup-requests"), api("/api/admin/password-reset-requests")]);
+    setRequestCount(signupData.requests.length + resetData.requests.length);
+  } catch (_) {
+    // A count must never block the rest of the authenticated experience.
+    setRequestCount(0);
+  }
 }
 
 function switchPage(page) {
@@ -94,9 +114,12 @@ async function loadDashboard() {
     $("#month-income").textContent = `This month: ${money(data.current_month.income_total)}`;
     $("#month-expense").textContent = `This month: ${money(data.current_month.expense_total)}`;
     $("#month-count").textContent = data.current_month.income.length + data.current_month.expenses.length;
+    ["#balance-value", "#total-income", "#total-expense", "#month-income", "#month-expense", "#month-count"].forEach((selector) => $(selector).classList.remove("skeleton-text", "skeleton-value", "skeleton-line"));
+    $("#page-dashboard").setAttribute("aria-busy", "false");
     renderExpenseBars(data.current_month.expense_by_category);
     renderRecent(data.recent, data.current_month.income);
   } catch (error) { toast(error.message, true); }
+  finally { $("#app-preloader").classList.add("hidden"); }
 }
 
 function renderExpenseBars(items) {
@@ -125,10 +148,11 @@ async function loadTransactions(kind) {
   const start = $(`#${kind}-start`).value;
   const end = $(`#${kind}-end`).value;
   if (search) params.set("search", search); if (start) params.set("start", start); if (end) params.set("end", end);
+  const body = $(`#${kind}-table`);
+  body.innerHTML = `<tr class="skeleton-row"><td colspan="6"><span></span><span></span><span></span></td></tr>`;
   try {
     const data = await api(`/api/transactions/${kind}?${params}`);
     state.transactions[kind] = data.transactions;
-    const body = $(`#${kind}-table`);
     if (!data.transactions.length) { body.innerHTML = `<tr><td colspan="6" class="empty-state">No ${plural} records found.</td></tr>`; return; }
     body.innerHTML = data.transactions.map((item) => `<tr><td>${item.date}</td><td><b>${safe(item.party)}</b><br><small>${safe(item.description)}</small></td><td><span class="badge ${kind}">${safe(item.category)}</span></td><td>${safe(item.reference || "—")}</td><td class="amount ${kind === "expense" ? "expense-text" : ""}">${money(item.amount)}</td><td><div class="row-actions"><button class="table-button" data-edit="${kind}" data-id="${item.id}">Edit</button><button class="table-button delete" data-delete="${kind}" data-id="${item.id}">Delete</button></div></td></tr>`).join("");
   } catch (error) { toast(error.message, true); }
@@ -195,6 +219,7 @@ function exportReport(format) {
 }
 
 async function loadUsers() {
+  $("#users-table").innerHTML = `<tr class="skeleton-row"><td colspan="6"><span></span><span></span><span></span></td></tr>`;
   try { const data = await api("/api/users"); $("#users-table").innerHTML = data.users.map((item) => `<tr><td><b>${safe(item.full_name)}</b></td><td>${safe(item.username)}</td><td><span class="badge">${safe(item.role)}</span></td><td><span class="badge ${item.is_active ? "active" : "inactive"}">${item.is_active ? "Active" : "Inactive"}</span></td><td>${item.created_at.slice(0, 10)}</td><td>${item.id === state.user.id ? "" : `<button class="table-button" data-user-status="${item.id}" data-active="${item.is_active}">${item.is_active ? "Deactivate" : "Activate"}</button><button class="table-button" data-reset-password="${item.id}">Reset password</button>`}</td></tr>`).join(""); } catch (error) { toast(error.message, true); }
 }
 
@@ -208,17 +233,20 @@ async function toggleUser(id, isActive) {
 }
 
 async function loadRequests() {
+  $("#signup-requests-table").innerHTML = `<tr class="skeleton-row"><td colspan="5"><span></span><span></span><span></span></td></tr>`;
+  $("#reset-requests-table").innerHTML = `<tr class="skeleton-row"><td colspan="4"><span></span><span></span><span></span></td></tr>`;
   try {
     const [signupData, resetData] = await Promise.all([api("/api/admin/signup-requests"), api("/api/admin/password-reset-requests")]);
     $("#signup-requests-table").innerHTML = signupData.requests.length ? signupData.requests.map((item) => `<tr><td><b>${safe(item.full_name)}</b></td><td>${safe(item.username)}</td><td><span class="badge">${safe(item.requested_role)}</span></td><td>${item.created_at.slice(0, 10)}</td><td><div class="row-actions"><button class="table-button" data-approve-signup="${item.id}">Approve</button><button class="table-button delete" data-reject-signup="${item.id}">Reject</button></div></td></tr>`).join("") : `<tr><td colspan="5" class="empty-state">No pending signup requests.</td></tr>`;
     $("#reset-requests-table").innerHTML = resetData.requests.length ? resetData.requests.map((item) => `<tr><td><b>${safe(item.full_name)}</b></td><td>${safe(item.username)}</td><td>${item.requested_at.slice(0, 10)}</td><td><button class="table-button" data-complete-reset="${item.id}" data-user-id="${item.user_id}" data-user-name="${safe(item.username)}">Reset password</button></td></tr>`).join("") : `<tr><td colspan="4" class="empty-state">No pending password reset requests.</td></tr>`;
+    setRequestCount(signupData.requests.length + resetData.requests.length);
   } catch (error) { toast(error.message, true); }
 }
 
 async function reviewSignupRequest(id, decision) {
   const label = decision === "approve" ? "approve" : "reject";
   if (!confirm(`Are you sure you want to ${label} this signup request?`)) return;
-  try { await api(`/api/admin/signup-requests/${id}/${decision}`, { method: "POST" }); toast(`Signup request ${decision}d.`); loadRequests(); if (decision === "approve") loadUsers(); } catch (error) { toast(error.message, true); }
+  try { await api(`/api/admin/signup-requests/${id}/${decision}`, { method: "POST" }); toast(`Signup request ${decision}d.`); loadRequests(); refreshRequestCount(); if (decision === "approve") loadUsers(); } catch (error) { toast(error.message, true); }
 }
 
 function openPasswordReset(userId, username, requestId = "") {
@@ -232,7 +260,7 @@ async function savePasswordReset(event) {
   event.preventDefault();
   const form = event.currentTarget; const password = form.password.value;
   const url = form.request_id.value ? `/api/admin/password-reset-requests/${form.request_id.value}/complete` : `/api/users/${form.user_id.value}/reset-password`;
-  try { await api(url, { method: "POST", body: JSON.stringify({ password }) }); closeModalCompat($("#password-reset-modal")); toast("Password reset. Share the temporary password securely."); loadUsers(); loadRequests(); } catch (error) { toast(error.message, true); }
+  try { await api(url, { method: "POST", body: JSON.stringify({ password }) }); closeModalCompat($("#password-reset-modal")); toast("Password reset. Share the temporary password securely."); loadUsers(); loadRequests(); refreshRequestCount(); } catch (error) { toast(error.message, true); }
 }
 
 async function loadAudit() {
