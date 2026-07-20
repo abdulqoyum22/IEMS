@@ -174,7 +174,7 @@ def forgot_password():
                 db.session.rollback()
             except Exception:
                 pass
-    return jsonify(message="If the account exists, the Administrator has been notified of the recovery request.")
+    return jsonify(message="Password reset request received. Please contact your IEMS Administrator to complete the verification process.")
 
 
 @main_blueprint.post("/api/users/<int:user_id>/reset-password")
