@@ -19,7 +19,7 @@ from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, Tabl
 from sqlalchemy import or_, select
 
 from iems.extensions import db, login_manager
-from iems.models import AuditLog, Category, CategoryType, ExpenseTransaction, IncomeTransaction, Role, User
+from iems.models import AuditLog, Category, CategoryType, ExpenseTransaction, IncomeTransaction, PasswordResetRequest, RequestStatus, Role, SignupRequest, User
 from iems.models.base import utc_now
 from iems.services.report_service import build_report
 
@@ -82,6 +82,15 @@ def user_data(user: User) -> dict:
         "is_active": user.is_active,
         "created_at": user.created_at.isoformat(),
     }
+
+
+def signup_request_data(item: SignupRequest) -> dict:
+    return {"id": item.id, "username": item.username, "full_name": item.full_name, "requested_role": item.requested_role.value, "status": item.status.value, "created_at": item.created_at.isoformat()}
+
+
+def password_reset_request_data(item: PasswordResetRequest) -> dict:
+    user = db.session.get(User, item.user_id)
+    return {"id": item.id, "user_id": item.user_id, "username": user.username if user else "Unknown", "full_name": user.full_name if user else "Unknown", "status": item.status.value, "requested_at": item.requested_at.isoformat()}
 
 
 def transaction_data(item, category_names: dict[int, str]) -> dict:
@@ -157,24 +166,43 @@ def login():
 
 @main_blueprint.post("/api/auth/forgot-password")
 def forgot_password():
-    """Log an offline recovery request without revealing whether an account exists."""
+    """Create an internal recovery request without revealing account existence."""
     username = str((request.get_json() or {}).get("username", "")).strip().lower()
     if not username:
         return api_error("Enter your username to request a reset.")
     user = db.session.scalar(select(User).where(User.username == username))
-    if user:
-        try:
-            db.session.add(AuditLog(user_id=user.id, action="PASSWORD_RESET_REQUEST", entity_type="USER", entity_id=user.id, description=f"Password reset requested for {username}."))
+    if user and user.is_active:
+        pending = db.session.scalar(select(PasswordResetRequest.id).where(PasswordResetRequest.user_id == user.id, PasswordResetRequest.status == RequestStatus.PENDING))
+        if not pending:
+            reset_request = PasswordResetRequest(user_id=user.id)
+            db.session.add(reset_request)
+            db.session.flush()
+            db.session.add(AuditLog(user_id=user.id, action="PASSWORD_RESET_REQUEST", entity_type="PASSWORD_RESET_REQUEST", entity_id=reset_request.id, description=f"Password reset requested for {username}."))
             db.session.commit()
-        except Exception:
-            # Fail gracefully: don't reveal errors to the client. Keep a server-side record.
-            import logging
-            logging.exception("Failed to record password reset request for %s", username)
-            try:
-                db.session.rollback()
-            except Exception:
-                pass
-    return jsonify(message="Password reset request received. Please contact your IEMS Administrator to complete the verification process.")
+    return jsonify(message="Your password reset request has been submitted to an administrator.")
+
+
+@main_blueprint.post("/api/auth/signup-request")
+def signup_request():
+    payload = request.get_json() or {}
+    username = str(payload.get("username", "")).strip().lower()
+    full_name = str(payload.get("full_name", "")).strip()
+    password = str(payload.get("password", ""))
+    try:
+        requested_role = Role(payload.get("requested_role", Role.TREASURER.value))
+    except ValueError:
+        return api_error("Requested role must be admin or treasurer.")
+    if len(username) < 3 or len(full_name) < 3 or len(password) < 8:
+        return api_error("Use a name and username of at least 3 characters, and a password of at least 8 characters.")
+    if db.session.scalar(select(User.id).where(User.username == username)) or db.session.scalar(select(SignupRequest.id).where(SignupRequest.username == username)):
+        return api_error("That username is already in use or has already been requested.")
+    item = SignupRequest(username=username, full_name=full_name, requested_role=requested_role)
+    item.set_password(password)
+    db.session.add(item)
+    db.session.flush()
+    db.session.add(AuditLog(action="SIGNUP_REQUEST", entity_type="SIGNUP_REQUEST", entity_id=item.id, description=f"Signup request submitted for {username}."))
+    db.session.commit()
+    return jsonify(message="Your signup request has been submitted to an administrator."), 201
 
 
 @main_blueprint.post("/api/users/<int:user_id>/reset-password")
@@ -196,6 +224,75 @@ def admin_reset_password(user_id: int):
     # Use existing setter to ensure same hashing is applied
     user.set_password(new_password)
     audit("PASSWORD_RESET_BY_ADMIN", "USER", f"Administrator reset password for {user.username}.", user.id)
+    db.session.commit()
+    return jsonify(message="Password reset successfully.")
+
+
+@main_blueprint.get("/api/admin/signup-requests")
+@admin_required
+def signup_requests():
+    rows = db.session.scalars(select(SignupRequest).where(SignupRequest.status == RequestStatus.PENDING).order_by(SignupRequest.created_at.desc())).all()
+    return jsonify(requests=[signup_request_data(item) for item in rows])
+
+
+@main_blueprint.post("/api/admin/signup-requests/<int:request_id>/approve")
+@admin_required
+def approve_signup_request(request_id: int):
+    item = db.session.get(SignupRequest, request_id)
+    if not item or item.status != RequestStatus.PENDING:
+        return api_error("Pending signup request not found.", 404)
+    if db.session.scalar(select(User.id).where(User.username == item.username)):
+        return api_error("A user with that username already exists.", 409)
+    user = User(username=item.username, full_name=item.full_name, role=item.requested_role, password_hash=item.password_hash)
+    item.status = RequestStatus.APPROVED
+    item.reviewed_by_id = current_user.id
+    item.reviewed_at = utc_now()
+    db.session.add(user)
+    db.session.flush()
+    audit("APPROVE", "SIGNUP_REQUEST", f"Approved signup request for {user.username}; account created.", item.id)
+    db.session.commit()
+    return jsonify(user=user_data(user))
+
+
+@main_blueprint.post("/api/admin/signup-requests/<int:request_id>/reject")
+@admin_required
+def reject_signup_request(request_id: int):
+    item = db.session.get(SignupRequest, request_id)
+    if not item or item.status != RequestStatus.PENDING:
+        return api_error("Pending signup request not found.", 404)
+    item.status = RequestStatus.REJECTED
+    item.reviewed_by_id = current_user.id
+    item.reviewed_at = utc_now()
+    audit("REJECT", "SIGNUP_REQUEST", f"Rejected signup request for {item.username}.", item.id)
+    db.session.commit()
+    return jsonify(message="Signup request rejected.")
+
+
+@main_blueprint.get("/api/admin/password-reset-requests")
+@admin_required
+def password_reset_requests():
+    rows = db.session.scalars(select(PasswordResetRequest).where(PasswordResetRequest.status == RequestStatus.PENDING).order_by(PasswordResetRequest.requested_at.desc())).all()
+    return jsonify(requests=[password_reset_request_data(item) for item in rows])
+
+
+@main_blueprint.post("/api/admin/password-reset-requests/<int:request_id>/complete")
+@admin_required
+def complete_password_reset_request(request_id: int):
+    payload = request.get_json() or {}
+    new_password = str(payload.get("password", ""))
+    if len(new_password) < 8:
+        return api_error("Password must be at least 8 characters.")
+    item = db.session.get(PasswordResetRequest, request_id)
+    if not item or item.status != RequestStatus.PENDING:
+        return api_error("Pending password reset request not found.", 404)
+    user = db.session.get(User, item.user_id)
+    if not user:
+        return api_error("User not found.", 404)
+    user.set_password(new_password)
+    item.status = RequestStatus.COMPLETED
+    item.handled_by_id = current_user.id
+    item.handled_at = utc_now()
+    audit("PASSWORD_RESET_BY_ADMIN", "PASSWORD_RESET_REQUEST", f"Administrator completed password reset request for {user.username}.", item.id)
     db.session.commit()
     return jsonify(message="Password reset successfully.")
 

@@ -7,8 +7,8 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Outfit:wght@500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css', v='responsive-3') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css', v='responsive-3') }}">
   </head>
   <body>
     <div id="toast-region" aria-live="polite"></div>
@@ -28,7 +28,7 @@
           <label>Password<div class="password-field"><input name="password" type="password" autocomplete="current-password" required placeholder="••••••••"><button class="password-toggle" type="button" aria-label="Show password">Show</button></div></label>
           <button class="btn btn-primary btn-wide" type="submit"><span id="auth-submit">Sign in</span> <span>→</span></button>
         </form>
-        <div class="auth-links"><button id="forgot-password" type="button">Forgot password?</button><p id="auth-note" class="form-note">Your account is managed by the IEMS administrator.</p></div>
+        <div class="auth-links"><button id="forgot-password" type="button">Forgot password?</button><button id="request-signup" type="button">Request an account</button><p id="auth-note" class="form-note">Your account is managed by the IEMS administrator.</p></div>
       </div>
       <p class="auth-footer">Income &amp; Expenditure Management System · Computer Engineering Students Association</p>
     </section>
@@ -37,12 +37,13 @@
       <aside class="sidebar">
         <div class="sidebar-brand"><img class="brand-logo" src="{{ url_for('static', filename='images/cesa-circuit-mark.svg') }}" alt="CESA technology mark"><div><strong>IEMS</strong><span>CESA FINANCE</span></div></div>
         <nav class="nav-list">
-          <button class="nav-item active" data-page="dashboard"><span>▦</span>Dashboard</button>
-          <button class="nav-item" data-page="income"><span>↗</span>Income</button>
-          <button class="nav-item" data-page="expenses"><span>↘</span>Expenses</button>
-          <button class="nav-item" data-page="reports"><span>◫</span>Reports</button>
-          <button class="nav-item admin-only" data-page="users"><span>♙</span>Users</button>
-          <button class="nav-item admin-only" data-page="audit"><span>◷</span>Audit log</button>
+          <button class="nav-item active" data-page="dashboard" aria-label="Dashboard" title="Dashboard"><span>▦</span>Dashboard</button>
+          <button class="nav-item" data-page="income" aria-label="Income" title="Income"><span>↗</span>Income</button>
+          <button class="nav-item" data-page="expenses" aria-label="Expenditure" title="Expenditure"><span>↘</span>Expenses</button>
+          <button class="nav-item" data-page="reports" aria-label="Reports" title="Reports"><span>◫</span>Reports</button>
+          <button class="nav-item admin-only" data-page="users" aria-label="Users" title="Users"><span>♙</span>Users</button>
+          <button class="nav-item admin-only" data-page="requests" aria-label="Pending signup and password reset requests" title="Requests"><span>☷</span>Requests</button>
+          <button class="nav-item admin-only" data-page="audit" aria-label="Audit log" title="Audit log"><span>◷</span>Audit log</button>
         </nav>
         <div class="sidebar-bottom"><div class="mini-user"><div class="avatar" id="sidebar-initial">A</div><div><b id="sidebar-name">Administrator</b><small id="sidebar-role">Admin</small></div></div><button id="logout-button" class="logout">Sign out <span>→</span></button></div>
       </aside>
@@ -63,6 +64,8 @@
 
         <section class="page" id="page-users"><div class="section-heading"><div><h2>User management</h2><p>Create and control access for finance officers.</p></div><button class="btn btn-primary" id="add-user">+ Add user</button></div><div class="panel table-panel"><div class="table-wrap"><table><thead><tr><th>Name</th><th>Username</th><th>Role</th><th>Status</th><th>Created</th><th></th></tr></thead><tbody id="users-table"></tbody></table></div></div></section>
 
+        <section class="page" id="page-requests"><div class="section-heading"><div><h2>Account requests</h2><p>Review pending signup and internal password recovery requests.</p></div></div><div class="request-grid"><article class="panel table-panel"><div class="panel-heading"><div><h3>Pending signup requests</h3><p>Accounts remain inactive until approved.</p></div></div><div class="table-wrap"><table><thead><tr><th>Name</th><th>Username</th><th>Requested role</th><th>Submitted</th><th></th></tr></thead><tbody id="signup-requests-table"></tbody></table></div></article><article class="panel table-panel"><div class="panel-heading"><div><h3>Password reset requests</h3><p>Reset passwords only after identity verification.</p></div></div><div class="table-wrap"><table><thead><tr><th>Name</th><th>Username</th><th>Submitted</th><th></th></tr></thead><tbody id="reset-requests-table"></tbody></table></div></article></div></section>
+
         <section class="page" id="page-audit"><div class="section-heading"><div><h2>Audit log</h2><p>Recent system activity. Financial changes are retained for accountability.</p></div></div><div class="panel table-panel"><div class="table-wrap"><table><thead><tr><th>Time</th><th>Action</th><th>Area</th><th>Description</th></tr></thead><tbody id="audit-table"></tbody></table></div></div></section>
       </main>
     </div>
@@ -71,6 +74,8 @@
 
     <dialog id="user-modal" class="modal small-modal"><form id="user-form" method="dialog"><div class="modal-heading"><div><p class="eyebrow">ACCESS CONTROL</p><h2>Add user</h2></div><button class="icon-button" type="button" data-close="user-modal">×</button></div><div class="form-grid"><label>Full name<input name="full_name" required></label><label>Username<input name="username" required></label><label>Role<select name="role"><option value="treasurer">Treasurer</option><option value="admin">Administrator</option></select></label><label>Temporary password<input name="password" type="password" minlength="8" required></label></div><div class="modal-actions"><button class="btn btn-light" type="button" data-close="user-modal">Cancel</button><button class="btn btn-primary" type="submit">Create user</button></div></form></dialog>
     <dialog id="recovery-modal" class="modal small-modal"><form id="recovery-form" method="dialog"><div class="modal-heading"><div><p class="eyebrow">ACCOUNT RECOVERY</p><h2>Forgot your password?</h2></div><button class="icon-button" type="button" data-close="recovery-modal">×</button></div><p class="recovery-copy">Enter your username. Your request will be logged securely for the IEMS Administrator, who can verify your identity and reset access.</p><div class="form-grid"><label>Username<input name="username" required autocomplete="username"></label></div><div class="modal-actions"><button class="btn btn-light" type="button" data-close="recovery-modal">Cancel</button><button class="btn btn-primary" type="submit">Request reset</button></div></form></dialog>
+    <dialog id="signup-modal" class="modal small-modal"><form id="signup-form" method="dialog"><div class="modal-heading"><div><p class="eyebrow">ACCOUNT REQUEST</p><h2>Request IEMS access</h2></div><button class="icon-button" type="button" data-close="signup-modal">×</button></div><p class="recovery-copy">Your request will remain pending until an administrator approves it.</p><div class="form-grid"><label>Full name<input name="full_name" required autocomplete="name"></label><label>Username<input name="username" required autocomplete="username"></label><label>Requested role<select name="requested_role"><option value="treasurer">Treasurer</option><option value="admin">Administrator</option></select></label><label>Password<input name="password" type="password" minlength="8" required autocomplete="new-password"></label></div><div class="modal-actions"><button class="btn btn-light" type="button" data-close="signup-modal">Cancel</button><button class="btn btn-primary" type="submit">Submit request</button></div></form></dialog>
+    <dialog id="password-reset-modal" class="modal small-modal"><form id="password-reset-form" method="dialog"><div class="modal-heading"><div><p class="eyebrow">ADMIN RESET</p><h2>Set a new password</h2></div><button class="icon-button" type="button" data-close="password-reset-modal">×</button></div><p id="password-reset-copy" class="recovery-copy">Set a secure temporary password and share it through an approved channel.</p><input name="user_id" type="hidden"><input name="request_id" type="hidden"><div class="form-grid"><label>New password<input name="password" type="password" minlength="8" required autocomplete="new-password"></label></div><div class="modal-actions"><button class="btn btn-light" type="button" data-close="password-reset-modal">Cancel</button><button class="btn btn-primary" type="submit">Reset password</button></div></form></dialog>
     <script src="{{ url_for('static', filename='js/app.js') }}"></script>
   </body>
 </html>

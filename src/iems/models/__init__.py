@@ -2,6 +2,7 @@
 
 from iems.extensions import db
 from iems.models.audit_log import AuditLog
+from iems.models.access_request import PasswordResetRequest, RequestStatus, SignupRequest
 from iems.models.category import Category, CategoryType
 from iems.models.expense import ExpenseTransaction
 from iems.models.income import IncomeTransaction
@@ -50,6 +51,9 @@ def seed_default_categories() -> None:
 
 __all__ = [
     "AuditLog",
+    "PasswordResetRequest",
+    "RequestStatus",
+    "SignupRequest",
     "Category",
     "CategoryType",
     "ExpenseTransaction",

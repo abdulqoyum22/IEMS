@@ -70,17 +70,18 @@ function enterApp(user) {
 }
 
 function switchPage(page) {
-  if ((page === "users" || page === "audit") && state.user.role !== "admin") return;
+  if ((page === "users" || page === "requests" || page === "audit") && state.user.role !== "admin") return;
   state.page = page;
   $$(".page").forEach((item) => item.classList.toggle("active", item.id === `page-${page}`));
   $$(".nav-item").forEach((item) => item.classList.toggle("active", item.dataset.page === page));
-  const labels = { dashboard: ["OVERVIEW", "Financial dashboard"], income: ["RECEIPTS", "Income management"], expenses: ["PAYMENTS", "Expense management"], reports: ["ANALYSIS", "Financial reports"], users: ["ACCESS CONTROL", "User management"], audit: ["ACCOUNTABILITY", "Audit log"] };
+  const labels = { dashboard: ["OVERVIEW", "Financial dashboard"], income: ["RECEIPTS", "Income management"], expenses: ["PAYMENTS", "Expense management"], reports: ["ANALYSIS", "Financial reports"], users: ["ACCESS CONTROL", "User management"], requests: ["ADMINISTRATION", "Account requests"], audit: ["ACCOUNTABILITY", "Audit log"] };
   $("#page-kicker").textContent = labels[page][0];
   $("#page-title").textContent = labels[page][1];
   if (page === "dashboard") loadDashboard();
   if (page === "income") loadTransactions("income");
   if (page === "expenses") loadTransactions("expense");
   if (page === "users") loadUsers();
+  if (page === "requests") loadRequests();
   if (page === "audit") loadAudit();
 }
 
@@ -206,6 +207,34 @@ async function toggleUser(id, isActive) {
   try { await api(`/api/users/${id}/status`, { method: "PATCH", body: JSON.stringify({ is_active: !isActive }) }); toast("User status updated."); loadUsers(); } catch (error) { toast(error.message, true); }
 }
 
+async function loadRequests() {
+  try {
+    const [signupData, resetData] = await Promise.all([api("/api/admin/signup-requests"), api("/api/admin/password-reset-requests")]);
+    $("#signup-requests-table").innerHTML = signupData.requests.length ? signupData.requests.map((item) => `<tr><td><b>${safe(item.full_name)}</b></td><td>${safe(item.username)}</td><td><span class="badge">${safe(item.requested_role)}</span></td><td>${item.created_at.slice(0, 10)}</td><td><div class="row-actions"><button class="table-button" data-approve-signup="${item.id}">Approve</button><button class="table-button delete" data-reject-signup="${item.id}">Reject</button></div></td></tr>`).join("") : `<tr><td colspan="5" class="empty-state">No pending signup requests.</td></tr>`;
+    $("#reset-requests-table").innerHTML = resetData.requests.length ? resetData.requests.map((item) => `<tr><td><b>${safe(item.full_name)}</b></td><td>${safe(item.username)}</td><td>${item.requested_at.slice(0, 10)}</td><td><button class="table-button" data-complete-reset="${item.id}" data-user-id="${item.user_id}" data-user-name="${safe(item.username)}">Reset password</button></td></tr>`).join("") : `<tr><td colspan="4" class="empty-state">No pending password reset requests.</td></tr>`;
+  } catch (error) { toast(error.message, true); }
+}
+
+async function reviewSignupRequest(id, decision) {
+  const label = decision === "approve" ? "approve" : "reject";
+  if (!confirm(`Are you sure you want to ${label} this signup request?`)) return;
+  try { await api(`/api/admin/signup-requests/${id}/${decision}`, { method: "POST" }); toast(`Signup request ${decision}d.`); loadRequests(); if (decision === "approve") loadUsers(); } catch (error) { toast(error.message, true); }
+}
+
+function openPasswordReset(userId, username, requestId = "") {
+  const form = $("#password-reset-form");
+  form.reset(); form.user_id.value = userId; form.request_id.value = requestId;
+  $("#password-reset-copy").textContent = `Set a secure temporary password for ${username} and share it through an approved channel.`;
+  showModalCompat($("#password-reset-modal"));
+}
+
+async function savePasswordReset(event) {
+  event.preventDefault();
+  const form = event.currentTarget; const password = form.password.value;
+  const url = form.request_id.value ? `/api/admin/password-reset-requests/${form.request_id.value}/complete` : `/api/users/${form.user_id.value}/reset-password`;
+  try { await api(url, { method: "POST", body: JSON.stringify({ password }) }); closeModalCompat($("#password-reset-modal")); toast("Password reset. Share the temporary password securely."); loadUsers(); loadRequests(); } catch (error) { toast(error.message, true); }
+}
+
 async function loadAudit() {
   try { const data = await api("/api/audit-logs"); $("#audit-table").innerHTML = data.logs.length ? data.logs.map((item) => `<tr><td>${new Date(item.created_at).toLocaleString()}</td><td><span class="badge">${safe(item.action)}</span></td><td>${safe(item.entity_type)}</td><td>${safe(item.description)}</td></tr>`).join("") : `<tr><td colspan="4" class="empty-state">No audit activity yet.</td></tr>`; } catch (error) { toast(error.message, true); }
 }
@@ -217,16 +246,18 @@ $("#auth-form").addEventListener("submit", async (event) => {
 $$('.password-toggle').forEach((button) => button.addEventListener("click", () => { const input = button.parentElement.querySelector("input"); const reveal = input.type === "password"; input.type = reveal ? "text" : "password"; button.textContent = reveal ? "Hide" : "Show"; button.setAttribute("aria-label", reveal ? "Hide password" : "Show password"); }));
 $("#forgot-password").addEventListener("click", () => showModalCompat($("#recovery-modal")));
 $("#recovery-form").addEventListener("submit", async (event) => { event.preventDefault(); try { const payload = Object.fromEntries(new FormData(event.currentTarget)); const data = await api("/api/auth/forgot-password", { method: "POST", body: JSON.stringify(payload) }); closeModalCompat($("#recovery-modal")); event.currentTarget.reset(); toast(data.message); } catch (error) { toast(error.message, true); } });
+$("#request-signup").addEventListener("click", () => showModalCompat($("#signup-modal")));
+$("#signup-form").addEventListener("submit", async (event) => { event.preventDefault(); const form = event.currentTarget; try { const data = await api("/api/auth/signup-request", { method: "POST", body: JSON.stringify(Object.fromEntries(new FormData(form))) }); closeModalCompat($("#signup-modal")); form.reset(); toast(data.message); } catch (error) { toast(error.message, true); } });
 $$('.nav-item').forEach((button) => button.addEventListener("click", () => switchPage(button.dataset.page)));
 $$('[data-go]').forEach((button) => button.addEventListener("click", () => switchPage(button.dataset.go)));
 $("#quick-income").addEventListener("click", () => openTransaction("income"));
 $$('[data-add]').forEach((button) => button.addEventListener("click", () => openTransaction(button.dataset.add)));
 $$('[data-filter]').forEach((button) => button.addEventListener("click", () => loadTransactions(button.dataset.filter)));
-$("#transaction-form").addEventListener("submit", saveTransaction); $("#user-form").addEventListener("submit", saveUser); $("#add-user").addEventListener("click", () => showModalCompat($("#user-modal")));
+$("#transaction-form").addEventListener("submit", saveTransaction); $("#user-form").addEventListener("submit", saveUser); $("#password-reset-form").addEventListener("submit", savePasswordReset); $("#add-user").addEventListener("click", () => showModalCompat($("#user-modal")));
 $$('[data-close]').forEach((button) => button.addEventListener("click", () => closeModalCompat(document.getElementById(button.dataset.close))));
 $("#generate-report").addEventListener("click", generateReport); $("#export-pdf").addEventListener("click", () => exportReport("pdf")); $("#export-excel").addEventListener("click", () => exportReport("excel"));
 $$('[data-preset]').forEach((button) => button.addEventListener("click", () => setReportPreset(button.dataset.preset)));
-document.addEventListener("click", (event) => { const edit = event.target.closest("[data-edit]"), remove = event.target.closest("[data-delete]"), status = event.target.closest("[data-user-status]"), reset = event.target.closest("[data-reset-password]"); if (edit) openTransaction(edit.dataset.edit, state.transactions[edit.dataset.edit].find((item) => item.id === Number(edit.dataset.id))); if (remove) deleteTransaction(remove.dataset.delete, remove.dataset.id); if (status) toggleUser(status.dataset.userStatus, status.dataset.active === "true"); if (reset) { const userId = reset.dataset.resetPassword; const temp = prompt('Enter a temporary password (min 8 chars) for this user:'); if (temp && temp.length >= 8) { api(`/api/users/${userId}/reset-password`, { method: 'POST', body: JSON.stringify({ password: temp }) }).then(() => { toast('Password reset. Share the temporary password securely.'); loadUsers(); }).catch((e) => toast(e.message, true)); } else if (temp) { toast('Password must be at least 8 characters.', true); } } });
+document.addEventListener("click", (event) => { const edit = event.target.closest("[data-edit]"), remove = event.target.closest("[data-delete]"), status = event.target.closest("[data-user-status]"), reset = event.target.closest("[data-reset-password]"), approve = event.target.closest("[data-approve-signup]"), reject = event.target.closest("[data-reject-signup]"), requestReset = event.target.closest("[data-complete-reset]"); if (edit) openTransaction(edit.dataset.edit, state.transactions[edit.dataset.edit].find((item) => item.id === Number(edit.dataset.id))); if (remove) deleteTransaction(remove.dataset.delete, remove.dataset.id); if (status) toggleUser(status.dataset.userStatus, status.dataset.active === "true"); if (reset) openPasswordReset(reset.dataset.resetPassword, reset.closest("tr").querySelector("td b").textContent); if (approve) reviewSignupRequest(approve.dataset.approveSignup, "approve"); if (reject) reviewSignupRequest(reject.dataset.rejectSignup, "reject"); if (requestReset) openPasswordReset(requestReset.dataset.userId, requestReset.dataset.userName, requestReset.dataset.completeReset); });
 $("#logout-button").addEventListener("click", async () => { try { await api("/api/auth/logout", { method: "POST" }); location.reload(); } catch (error) { toast(error.message, true); } });
 $("#theme-toggle").addEventListener("click", () => applyTheme(document.documentElement.dataset.theme === "dark" ? "light" : "dark"));
 document.addEventListener("keydown", (event) => { if (event.ctrlKey && event.shiftKey && event.key.toLowerCase() === "d") { event.preventDefault(); $("#theme-toggle").click(); } });
