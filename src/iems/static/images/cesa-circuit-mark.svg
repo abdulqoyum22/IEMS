@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" fill="none" aria-label="CESA technology mark">
+  <defs><linearGradient id="b" x1="16" y1="24" x2="220" y2="220" gradientUnits="userSpaceOnUse"><stop stop-color="#3475D1"/><stop offset="1" stop-color="#102C67"/></linearGradient></defs>
+  <path fill="url(#b)" d="M119 8h75l38 66-38 66h-75l-38-66 38-66Zm8 42-14 24 14 24h28l14-24-14-24h-28Z"/>
+  <path stroke="#3475D1" stroke-width="15" stroke-linecap="round" d="M16 68h74l22-38M8 120h74l22 38M18 174h70l22 38"/>
+  <circle cx="16" cy="68" r="12" fill="#3475D1"/><circle cx="8" cy="120" r="12" fill="#3475D1"/><circle cx="18" cy="174" r="12" fill="#3475D1"/>
+  <circle cx="65" cy="68" r="12" fill="white" stroke="#3475D1" stroke-width="10"/><circle cx="91" cy="174" r="12" fill="white" stroke="#3475D1" stroke-width="10"/>
+</svg>

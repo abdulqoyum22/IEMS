@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>IEMS | CESA Finance</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Outfit:wght@500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}">
+  </head>
+  <body>
+    <div id="toast-region" aria-live="polite"></div>
+
+    <section id="auth-view" class="auth-page">
+      <div class="auth-brand">
+        <img class="brand-logo" src="{{ url_for('static', filename='images/cesa-circuit-mark.svg') }}" alt="CESA technology mark">
+        <div><strong>IEMS</strong><span>CESA FINANCE</span></div>
+      </div>
+      <div class="auth-card">
+        <p class="eyebrow">CESA FINANCIAL DESK</p>
+        <h1 id="auth-title">Welcome back</h1>
+        <p id="auth-copy">Sign in to manage the association's finances.</p>
+        <form id="auth-form" class="form-grid">
+          <label id="name-field" class="hidden">Full name<input name="full_name" autocomplete="name" placeholder="e.g. Amina Yusuf"></label>
+          <label>Username<input name="username" autocomplete="username" required placeholder="Your username"></label>
+          <label>Password<div class="password-field"><input name="password" type="password" autocomplete="current-password" required placeholder="••••••••"><button class="password-toggle" type="button" aria-label="Show password">Show</button></div></label>
+          <button class="btn btn-primary btn-wide" type="submit"><span id="auth-submit">Sign in</span> <span>→</span></button>
+        </form>
+        <div class="auth-links"><button id="forgot-password" type="button">Forgot password?</button><p id="auth-note" class="form-note">Your account is managed by the IEMS administrator.</p></div>
+      </div>
+      <p class="auth-footer">Income &amp; Expenditure Management System · Computer Engineering Students Association</p>
+    </section>
+
+    <div id="app-view" class="app hidden">
+      <aside class="sidebar">
+        <div class="sidebar-brand"><img class="brand-logo" src="{{ url_for('static', filename='images/cesa-circuit-mark.svg') }}" alt="CESA technology mark"><div><strong>IEMS</strong><span>CESA FINANCE</span></div></div>
+        <nav class="nav-list">
+          <button class="nav-item active" data-page="dashboard"><span>▦</span>Dashboard</button>
+          <button class="nav-item" data-page="income"><span>↗</span>Income</button>
+          <button class="nav-item" data-page="expenses"><span>↘</span>Expenses</button>
+          <button class="nav-item" data-page="reports"><span>◫</span>Reports</button>
+          <button class="nav-item admin-only" data-page="users"><span>♙</span>Users</button>
+          <button class="nav-item admin-only" data-page="audit"><span>◷</span>Audit log</button>
+        </nav>
+        <div class="sidebar-bottom"><div class="mini-user"><div class="avatar" id="sidebar-initial">A</div><div><b id="sidebar-name">Administrator</b><small id="sidebar-role">Admin</small></div></div><button id="logout-button" class="logout">Sign out <span>→</span></button></div>
+      </aside>
+      <main class="content">
+        <header class="topbar"><div><p class="eyebrow" id="page-kicker">OVERVIEW</p><h1 id="page-title">Good day</h1></div><div class="top-actions"><span id="today-label"></span><button id="theme-toggle" class="theme-toggle" type="button" aria-label="Switch to dark mode" title="Switch to dark mode (Ctrl+Shift+D)"><span class="theme-toggle-icon" aria-hidden="true">◐</span><span class="theme-toggle-label">Dark</span></button><button id="quick-income" class="btn btn-primary">+ Add income</button></div></header>
+
+        <section class="page active" id="page-dashboard">
+          <div class="hero"><div><p>CESA Financial Position</p><h2 id="balance-value">₦0.00</h2><span>Total available balance</span></div><div class="hero-symbol">₦</div></div>
+          <div class="stat-grid"><article class="stat-card income"><span class="stat-icon">↗</span><div><small>Total income</small><strong id="total-income">₦0.00</strong><em id="month-income">This month: ₦0.00</em></div></article><article class="stat-card expense"><span class="stat-icon">↘</span><div><small>Total expenses</small><strong id="total-expense">₦0.00</strong><em id="month-expense">This month: ₦0.00</em></div></article><article class="stat-card"><span class="stat-icon">◷</span><div><small>Transactions this month</small><strong id="month-count">0</strong><em>Income and expenditure</em></div></article></div>
+          <div class="dashboard-grid"><article class="panel"><div class="panel-heading"><div><h3>Expense allocation</h3><p>Current month by category</p></div></div><div id="expense-bars" class="bar-list empty-state">No expenses recorded this month.</div></article><article class="panel"><div class="panel-heading"><div><h3>Recent activity</h3><p>Latest financial records</p></div><button class="text-button" data-go="income">View all</button></div><div id="recent-list" class="activity-list empty-state">No recent transactions.</div></article></div>
+        </section>
+
+        <section class="page" id="page-income"><div class="section-heading"><div><h2>Income records</h2><p>Track dues, levies, sponsorships and other funds received.</p></div><button class="btn btn-primary" data-add="income">+ Add income</button></div><div class="panel table-panel"><div class="filters"><input id="income-search" placeholder="Search source, description or reference"><input id="income-start" type="date"><input id="income-end" type="date"><button class="btn btn-light" data-filter="income">Filter</button></div><div class="table-wrap"><table><thead><tr><th>Date</th><th>Source</th><th>Category</th><th>Reference</th><th class="amount">Amount</th><th></th></tr></thead><tbody id="income-table"></tbody></table></div></div></section>
+
+        <section class="page" id="page-expenses"><div class="section-heading"><div><h2>Expense records</h2><p>Track CESA spending clearly and accountably.</p></div><button class="btn btn-primary" data-add="expense">+ Add expense</button></div><div class="panel table-panel"><div class="filters"><input id="expense-search" placeholder="Search payee, description or reference"><input id="expense-start" type="date"><input id="expense-end" type="date"><button class="btn btn-light" data-filter="expense">Filter</button></div><div class="table-wrap"><table><thead><tr><th>Date</th><th>Payee</th><th>Category</th><th>Reference</th><th class="amount">Amount</th><th></th></tr></thead><tbody id="expense-table"></tbody></table></div></div></section>
+
+        <section class="page" id="page-reports"><div class="section-heading"><div><h2>Financial reports</h2><p>Review CESA finances for any period and export the result.</p></div></div><div class="panel report-control"><div><label>Start date<input id="report-start" type="date"></label><label>End date<input id="report-end" type="date"></label></div><div class="report-actions"><button class="btn btn-light" data-preset="today">Today</button><button class="btn btn-light" data-preset="week">This week</button><button class="btn btn-light" data-preset="month">This month</button><button class="btn btn-primary" id="generate-report">Generate report</button></div></div><div id="report-output" class="hidden"><div class="stat-grid report-stats"><article class="stat-card income"><div><small>Income</small><strong id="report-income">₦0.00</strong></div></article><article class="stat-card expense"><div><small>Expenses</small><strong id="report-expense">₦0.00</strong></div></article><article class="stat-card"><div><small>Net balance</small><strong id="report-balance">₦0.00</strong></div></article></div><div class="panel"><div class="panel-heading"><div><h3>Report transactions</h3><p id="report-period"></p></div><div class="export-buttons"><button class="btn btn-light" id="export-pdf">Download PDF</button><button class="btn btn-primary" id="export-excel">Export Excel</button></div></div><div class="table-wrap"><table><thead><tr><th>Type</th><th>Date</th><th>Category</th><th>Source / Payee</th><th class="amount">Amount</th></tr></thead><tbody id="report-table"></tbody></table></div></div></div></section>
+
+        <section class="page" id="page-users"><div class="section-heading"><div><h2>User management</h2><p>Create and control access for finance officers.</p></div><button class="btn btn-primary" id="add-user">+ Add user</button></div><div class="panel table-panel"><div class="table-wrap"><table><thead><tr><th>Name</th><th>Username</th><th>Role</th><th>Status</th><th>Created</th><th></th></tr></thead><tbody id="users-table"></tbody></table></div></div></section>
+
+        <section class="page" id="page-audit"><div class="section-heading"><div><h2>Audit log</h2><p>Recent system activity. Financial changes are retained for accountability.</p></div></div><div class="panel table-panel"><div class="table-wrap"><table><thead><tr><th>Time</th><th>Action</th><th>Area</th><th>Description</th></tr></thead><tbody id="audit-table"></tbody></table></div></div></section>
+      </main>
+    </div>
+
+    <dialog id="transaction-modal" class="modal"><form id="transaction-form" method="dialog"><div class="modal-heading"><div><p class="eyebrow" id="transaction-kicker">NEW RECORD</p><h2 id="transaction-title">Add income</h2></div><button class="icon-button" type="button" data-close="transaction-modal">×</button></div><input name="record_id" type="hidden"><input name="kind" type="hidden"><div class="form-grid two-col"><label>Date<input name="date" type="date" required></label><label>Category<select name="category_id" required></select></label><label id="party-label">Source<input name="party" required placeholder="e.g. 300 Level students"></label><label>Amount (₦)<input name="amount" type="number" min="0.01" step="0.01" required placeholder="0.00"></label><label>Reference no. <span class="optional">optional</span><input name="reference" placeholder="Receipt or transfer reference"></label><label class="full-width">Description<textarea name="description" required placeholder="What was this transaction for?"></textarea></label></div><div class="modal-actions"><button class="btn btn-light" type="button" data-close="transaction-modal">Cancel</button><button class="btn btn-primary" type="submit">Save record</button></div></form></dialog>
+
+    <dialog id="user-modal" class="modal small-modal"><form id="user-form" method="dialog"><div class="modal-heading"><div><p class="eyebrow">ACCESS CONTROL</p><h2>Add user</h2></div><button class="icon-button" type="button" data-close="user-modal">×</button></div><div class="form-grid"><label>Full name<input name="full_name" required></label><label>Username<input name="username" required></label><label>Role<select name="role"><option value="treasurer">Treasurer</option><option value="admin">Administrator</option></select></label><label>Temporary password<input name="password" type="password" minlength="8" required></label></div><div class="modal-actions"><button class="btn btn-light" type="button" data-close="user-modal">Cancel</button><button class="btn btn-primary" type="submit">Create user</button></div></form></dialog>
+    <dialog id="recovery-modal" class="modal small-modal"><form id="recovery-form" method="dialog"><div class="modal-heading"><div><p class="eyebrow">ACCOUNT RECOVERY</p><h2>Forgot your password?</h2></div><button class="icon-button" type="button" data-close="recovery-modal">×</button></div><p class="recovery-copy">Enter your username. Your request will be logged securely for the IEMS Administrator, who can verify your identity and reset access.</p><div class="form-grid"><label>Username<input name="username" required autocomplete="username"></label></div><div class="modal-actions"><button class="btn btn-light" type="button" data-close="recovery-modal">Cancel</button><button class="btn btn-primary" type="submit">Request reset</button></div></form></dialog>
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+  </body>
+</html>

@@ -1,0 +1,135 @@
+/* CESA circuit identity: derived from the supplied logo's navy and electric-blue system. */
+:root {
+  --ink: #14254d;
+  --muted: #64708a;
+  --line: #dce5f3;
+  --surface: #ffffff;
+  --bg: #f3f6fc;
+  --green: #2f61ad;
+  --green-dark: #1b3976;
+  --pale: #eaf1fc;
+  --shadow: 0 16px 38px rgba(21, 48, 104, .10);
+}
+
+body { background: #f3f6fc; }
+
+.auth-page {
+  background:
+    radial-gradient(circle at 90% 10%, rgba(67, 125, 211, .16), transparent 28rem),
+    linear-gradient(135deg, #eef4fe, #f9fbff 58%, #e8effb);
+}
+
+.auth-card {
+  border-color: #dfe8f6;
+  box-shadow: 0 20px 48px rgba(20, 50, 105, .12);
+}
+
+.brand-logo { filter: drop-shadow(0 4px 8px rgba(27, 57, 118, .18)); }
+.sidebar { background: linear-gradient(180deg, #1d356d, #112756); }
+.sidebar-brand span { color: #afc7ee; }
+.nav-item { color: #c9d8ef; }
+.nav-item:hover, .nav-item.active { background: rgba(97, 143, 219, .22); }
+.sidebar-bottom { border-color: rgba(168, 196, 238, .24); }
+.mini-user small, .logout { color: #bdd0ed; }
+.sidebar-brand .brand-logo { background: #fff; }
+
+.btn-primary { background: #2f61ad; box-shadow: 0 5px 12px rgba(47, 97, 173, .20); }
+.btn-primary:hover { background: #1b3976; }
+.btn-light { border-color: #d6e1f1; color: #28436e; }
+.password-toggle { background: #eaf1fc; color: #2f61ad; }
+.auth-links button, .text-button, .eyebrow { color: #2f61ad; }
+
+input, select, textarea { border-color: #d6e1f1; }
+input:focus, select:focus, textarea:focus { border-color: #2f61ad; box-shadow: 0 0 0 3px rgba(47, 97, 173, .13); }
+
+.hero {
+  background:
+    linear-gradient(120deg, rgba(47, 97, 173, .98), rgba(29, 53, 109, .99)),
+    #1d356d;
+  box-shadow: 0 16px 30px rgba(29, 53, 109, .17);
+}
+.hero-symbol { opacity: .30; }
+.stat-card, .panel { border-color: #dfe7f3; box-shadow: 0 4px 12px rgba(22, 51, 103, .035); }
+.stat-card.income .stat-icon, .activity-type { background: #eaf1fc; color: #2f61ad; }
+.bar-track { background: #e8edf6; }
+.bar-fill { background: linear-gradient(90deg, #3a73c5, #1d356d); }
+.table-button { background: #edf3fc; color: #284b88; }
+.badge.active, .badge.income { background: #e9f1fd; color: #28599f; }
+
+.modal::backdrop { background: rgba(13, 31, 72, .52); backdrop-filter: blur(3px); }
+.icon-button { background: #edf3fc; color: #294d8d; }
+
+/* Motion is intentionally light: feedback, not decoration. */
+.page.active { animation: cesa-page-in .24s ease-out both; }
+.panel, .stat-card, .btn { transition: transform .18s ease, box-shadow .18s ease, background-color .18s ease; }
+.panel:hover, .stat-card:hover { transform: translateY(-2px); box-shadow: 0 13px 27px rgba(24, 54, 111, .09); }
+.btn-primary:hover { transform: translateY(-1px); }
+
+@keyframes cesa-page-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+}
+
+.theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: .4rem;
+  padding: .58rem .7rem;
+  border: 1px solid #d6e1f1;
+  border-radius: .55rem;
+  background: rgba(255,255,255,.8);
+  color: #294d8d;
+  font-size: .76rem;
+  font-weight: 700;
+}
+.theme-toggle-icon { font-size: 1rem; line-height: 1; }
+
+/* A complete dark surface system—not an inverted screenshot. */
+:root[data-theme="dark"] {
+  --ink: #edf3ff;
+  --muted: #aebbd0;
+  --line: #2a416c;
+  --surface: #15284d;
+  --bg: #0c1931;
+  --green: #79a9ff;
+  --green-dark: #a5c4ff;
+  --pale: #1c3563;
+  --shadow: 0 18px 42px rgba(0,0,0,.28);
+}
+:root[data-theme="dark"] body { background: #0c1931; }
+:root[data-theme="dark"] .auth-page { background: radial-gradient(circle at 88% 8%, rgba(73,126,222,.22), transparent 30rem), linear-gradient(135deg,#0e1e3c,#11264a 58%,#0b1932); }
+:root[data-theme="dark"] .auth-card,
+:root[data-theme="dark"] .panel,
+:root[data-theme="dark"] .stat-card { background: #15284d; border-color: #2a416c; box-shadow: 0 16px 36px rgba(0,0,0,.2); }
+:root[data-theme="dark"] h1,
+:root[data-theme="dark"] h2,
+:root[data-theme="dark"] h3,
+:root[data-theme="dark"] .form-grid label,
+:root[data-theme="dark"] .report-control label { color: #edf3ff; }
+:root[data-theme="dark"] input,
+:root[data-theme="dark"] select,
+:root[data-theme="dark"] textarea { background: #0f203e; border-color: #344e7e; color: #edf3ff; }
+:root[data-theme="dark"] input::placeholder,
+:root[data-theme="dark"] textarea::placeholder { color: #8799b8; }
+:root[data-theme="dark"] .btn-light,
+:root[data-theme="dark"] .theme-toggle { background: #1c3563; border-color: #365384; color: #dce8ff; }
+:root[data-theme="dark"] .table-button { background: #1c3563; color: #c8dcff; }
+:root[data-theme="dark"] th { background: #112343; color: #aebbd0; }
+:root[data-theme="dark"] td { border-color: #2a416c; }
+:root[data-theme="dark"] .bar-track { background: #223b68; }
+:root[data-theme="dark"] .stat-icon { background: #1f3763; color: #bdd4ff; }
+:root[data-theme="dark"] .stat-card.income .stat-icon,
+:root[data-theme="dark"] .activity-type { background: #1b3a6f; color: #8cb7ff; }
+:root[data-theme="dark"] .sidebar { background: linear-gradient(180deg,#102650,#091833); }
+:root[data-theme="dark"] .modal { background: #15284d; }
+:root[data-theme="dark"] .icon-button { background: #1c3563; color: #dce8ff; }
+:root[data-theme="dark"] .badge { background: #243b65; color: #c8d7ef; }
+:root[data-theme="dark"] .badge.active,
+:root[data-theme="dark"] .badge.income { background: #1b3d74; color: #a7c7ff; }
+:root[data-theme="dark"] .activity-item { border-color: #2a416c; }
+
+@media(max-width:650px) { .theme-toggle-label { display:none; } .theme-toggle { padding:.58rem; } }

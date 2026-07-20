@@ -1,0 +1,12 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "iems"
+version = "0.1.0"
+description = "Offline Income and Expenditure Management System for CESA"
+requires-python = ">=3.10"
+
+[tool.setuptools.packages.find]
+where = ["src"]
