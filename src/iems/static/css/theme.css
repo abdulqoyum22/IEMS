@@ -87,6 +87,7 @@ input:focus, select:focus, textarea:focus { border-color: #2f61ad; box-shadow: 0
   font-weight: 700;
 }
 .theme-toggle-icon { font-size: 1rem; line-height: 1; }
+.mobile-logout { display: none; padding: .58rem .7rem; border: 1px solid #d6e1f1; border-radius: .55rem; background: rgba(255,255,255,.8); color: #b43331; font-size: .76rem; font-weight: 700; }
 
 /* A complete dark surface system—not an inverted screenshot. */
 :root[data-theme="dark"] {
@@ -117,6 +118,7 @@ input:focus, select:focus, textarea:focus { border-color: #2f61ad; box-shadow: 0
 :root[data-theme="dark"] textarea::placeholder { color: #8799b8; }
 :root[data-theme="dark"] .btn-light,
 :root[data-theme="dark"] .theme-toggle { background: #1c3563; border-color: #365384; color: #dce8ff; }
+:root[data-theme="dark"] .mobile-logout { background: #1c3563; border-color: #365384; color: #ffb8b4; }
 :root[data-theme="dark"] .table-button { background: #1c3563; color: #c8dcff; }
 :root[data-theme="dark"] th { background: #112343; color: #aebbd0; }
 :root[data-theme="dark"] td { border-color: #2a416c; }
@@ -132,7 +134,8 @@ input:focus, select:focus, textarea:focus { border-color: #2f61ad; box-shadow: 0
 :root[data-theme="dark"] .badge.income { background: #1b3d74; color: #a7c7ff; }
 :root[data-theme="dark"] .activity-item { border-color: #2a416c; }
 
-@media(max-width:650px) { .theme-toggle-label { display:none; } .theme-toggle { padding:.58rem; } }
+@media(max-width:950px) { .mobile-logout { display:inline-flex; align-items:center; } }
+@media(max-width:650px) { .theme-toggle-label { display:none; } .theme-toggle { padding:.58rem; } .mobile-logout { padding:.58rem; } }
 
 /* Responsive and loading refinement: one fluid shell at every viewport. */
 .content { max-width: none; margin: 0; }
